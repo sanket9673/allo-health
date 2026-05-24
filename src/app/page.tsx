@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Package, MapPin, ShoppingCart, Flame } from "lucide-react";
+import { Package, MapPin, ShoppingBag } from "lucide-react";
 
 type Product = {
   id: string;
@@ -22,8 +20,6 @@ type Product = {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  
-  // State to track selected quantity for each product-warehouse combo
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   
   const router = useRouter();
@@ -63,7 +59,6 @@ export default function Home() {
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKey
         },
-        // Send the dynamically selected quantity!
         body: JSON.stringify({ productId, warehouseId, quantity }),
       });
 
@@ -89,100 +84,108 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* Premium Header */}
-      <div className="bg-slate-900 text-white -mx-8 -mt-8 p-8 pb-12 mb-8 shadow-lg">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
-              <ShoppingCart className="w-8 h-8 text-blue-400" />
-              Allo Commerce
-            </h1>
-            <p className="text-slate-400 mt-2">Fast, reliable fulfillment & reservations.</p>
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans selection:bg-[#0071e3] selection:text-white pb-24">
+      {/* Apple-style Global Header */}
+      <nav className="w-full h-12 bg-white/80 backdrop-blur-md border-b border-[#d2d2d7] sticky top-0 z-50 flex items-center px-4 md:px-8">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-2 font-semibold tracking-tight text-lg">
+            <ShoppingBag className="w-5 h-5" />
+            <span>Allo Store</span>
           </div>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <Card key={product.id} className="flex flex-col border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="bg-slate-50/50 border-b pb-4">
-              <CardTitle className="flex justify-between items-start">
-                <span className="text-lg font-bold text-slate-800">{product.name}</span>
-                <span className="text-lg font-semibold text-blue-600">${product.price.toFixed(2)}</span>
-              </CardTitle>
-              <p className="text-xs text-slate-400 font-mono mt-1">SKU: {product.sku}</p>
-            </CardHeader>
+      </nav>
 
-            <CardContent className="flex-1 space-y-4 pt-4">
-              <p className="text-sm font-semibold flex items-center gap-2 text-slate-700">
-                <Package className="w-4 h-4 text-slate-400" /> Availability by Hub
-              </p>
+      <main className="max-w-7xl mx-auto px-6 md:px-8 pt-16">
+        {/* Apple-style Large Typography Header */}
+        <div className="mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#1d1d1f]">
+            Store. <span className="text-[#86868b]">The best way to buy the products you love.</span>
+          </h1>
+        </div>
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map((product) => (
+            <div key={product.id} className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden transition-transform duration-300 hover:scale-[1.01] flex flex-col">
               
-              <div className="space-y-3">
-                {product.stocks.map((stock) => {
-                  const qty = getQty(product.id, stock.warehouseId);
-                  const isLowStock = stock.availableQuantity > 0 && stock.availableQuantity <= 5;
-                  const isOutOfStock = stock.availableQuantity === 0;
+              {/* Product Header */}
+              <div className="p-8 pb-6 border-b border-[#f5f5f7]">
+                <h2 className="text-2xl font-semibold tracking-tight">{product.name}</h2>
+                <p className="text-lg text-[#1d1d1f] mt-2 font-medium">${product.price.toFixed(2)}</p>
+                <p className="text-xs text-[#86868b] font-mono mt-1">SKU: {product.sku}</p>
+              </div>
 
-                  return (
-                    <div key={stock.warehouseId} className="flex flex-col gap-2 border rounded-lg p-3 bg-white">
-                      <div className="flex justify-between items-start">
-                        <div className="text-sm">
-                          <p className="font-medium flex items-center gap-1.5 text-slate-700">
-                            <MapPin className="w-3.5 h-3.5 text-blue-500" /> {stock.warehouse.name}
-                          </p>
-                          {isOutOfStock ? (
-                            <p className="text-xs font-semibold text-red-500 mt-0.5">Out of stock</p>
-                          ) : isLowStock ? (
-                            <p className="text-xs font-semibold text-amber-600 flex items-center gap-1 mt-0.5">
-                              <Flame className="w-3 h-3" /> Only {stock.availableQuantity} left!
+              {/* Warehouses & Stock */}
+              <div className="p-8 pt-6 flex-1 bg-[#fbfbfd]">
+                <h3 className="text-xs font-bold text-[#86868b] uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5" /> Availability
+                </h3>
+                
+                <div className="space-y-6">
+                  {product.stocks.map((stock) => {
+                    const qty = getQty(product.id, stock.warehouseId);
+                    const isLowStock = stock.availableQuantity > 0 && stock.availableQuantity <= 5;
+                    const isOutOfStock = stock.availableQuantity === 0;
+
+                    return (
+                      <div key={stock.warehouseId} className="flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-[#1d1d1f] flex items-center gap-1.5 text-sm">
+                              <MapPin className="w-4 h-4 text-[#86868b]" /> {stock.warehouse.name}
                             </p>
-                          ) : (
-                            <p className="text-xs text-slate-500 mt-0.5">{stock.availableQuantity} units available</p>
-                          )}
+                            {isOutOfStock ? (
+                              <p className="text-xs font-medium text-red-500 mt-1">Currently unavailable.</p>
+                            ) : isLowStock ? (
+                              <p className="text-xs font-medium text-[#bf4800] mt-1">
+                                Hurry. Only {stock.availableQuantity} left.
+                              </p>
+                            ) : (
+                              <p className="text-xs text-[#86868b] mt-1">In Stock</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {!isOutOfStock && (
-                        <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100">
-                          {/* Custom Quantity Stepper */}
-                          <div className="flex items-center border rounded-md bg-slate-50">
+                        {!isOutOfStock && (
+                          <div className="flex items-center justify-between pt-1">
+                            {/* Apple-style Stepper */}
+                            <div className="flex items-center bg-[#e8e8ed] rounded-full px-1">
+                              <button 
+                                className="w-8 h-8 flex items-center justify-center text-[#1d1d1f] hover:bg-[#d2d2d7] rounded-full transition-colors disabled:opacity-30 disabled:hover:bg-transparent text-lg"
+                                disabled={qty <= 1}
+                                onClick={() => updateQty(product.id, stock.warehouseId, -1, stock.availableQuantity)}
+                              >
+                                −
+                              </button>
+                              <span className="w-8 text-center text-sm font-semibold text-[#1d1d1f]">{qty}</span>
+                              <button 
+                                className="w-8 h-8 flex items-center justify-center text-[#1d1d1f] hover:bg-[#d2d2d7] rounded-full transition-colors disabled:opacity-30 disabled:hover:bg-transparent text-lg"
+                                disabled={qty >= stock.availableQuantity}
+                                onClick={() => updateQty(product.id, stock.warehouseId, 1, stock.availableQuantity)}
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Apple-style Primary Button */}
                             <button 
-                              className="px-2.5 py-1 text-slate-600 hover:bg-slate-200 rounded-l-md disabled:opacity-30"
-                              disabled={qty <= 1}
-                              onClick={() => updateQty(product.id, stock.warehouseId, -1, stock.availableQuantity)}
+                              className="bg-[#0071e3] hover:bg-[#0077ed] text-white text-sm font-semibold py-2 px-5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={loadingId === `${product.id}-${stock.warehouseId}`}
+                              onClick={() => handleReserve(product.id, stock.warehouseId)}
                             >
-                              -
-                            </button>
-                            <span className="w-6 text-center text-sm font-medium">{qty}</span>
-                            <button 
-                              className="px-2.5 py-1 text-slate-600 hover:bg-slate-200 rounded-r-md disabled:opacity-30"
-                              disabled={qty >= stock.availableQuantity}
-                              onClick={() => updateQty(product.id, stock.warehouseId, 1, stock.availableQuantity)}
-                            >
-                              +
+                              {loadingId === `${product.id}-${stock.warehouseId}` ? "Processing..." : "Reserve"}
                             </button>
                           </div>
-
-                          <Button 
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
-                            disabled={loadingId === `${product.id}-${stock.warehouseId}`}
-                            onClick={() => handleReserve(product.id, stock.warehouseId)}
-                          >
-                            {loadingId === `${product.id}-${stock.warehouseId}` ? "Processing..." : "Reserve"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

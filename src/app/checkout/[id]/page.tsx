@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, AlertCircle, CircleCheck, CreditCard, ShieldCheck } from "lucide-react";
+import { Clock, AlertCircle, CheckCircle, ShieldCheck } from "lucide-react";
 
 export default function CheckoutPage() {
   const { id } = useParams();
@@ -60,7 +58,7 @@ export default function CheckoutPage() {
         setReservation({ ...reservation, status: "RELEASED" });
       } else if (res.ok) {
         toast({
-          title: action === "confirm" ? "Payment Successful!" : "Reservation Cancelled",
+          title: action === "confirm" ? "Payment Successful" : "Reservation Cancelled",
           description: action === "confirm" ? "Your order is confirmed." : "Stock has been released.",
         });
         router.push("/");
@@ -72,90 +70,110 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!reservation) return <div className="p-12 text-center text-slate-500 animate-pulse">Loading secure checkout...</div>;
+  if (!reservation) return (
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+      <div className="text-[#86868b] font-medium animate-pulse">Loading your secure checkout...</div>
+    </div>
+  );
 
   const isExpired = timeLeft <= 0;
   const isPending = reservation.status === "PENDING";
-  // Calculate total price!
   const totalPrice = (reservation.product?.price * reservation.quantity).toFixed(2);
 
   return (
-    <div className="max-w-md mx-auto mt-12 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-green-600" /> Secure Checkout
-        </h1>
-        <p className="text-slate-500 text-sm">Review your order details and complete payment.</p>
-      </div>
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] font-sans pt-12 pb-24 px-6 selection:bg-[#0071e3] selection:text-white">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-semibold tracking-tight mb-2">Checkout</h1>
+          <p className="text-[#86868b] flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-4 h-4" /> Secure encrypted connection
+          </p>
+        </div>
 
-      <Card className="border-slate-200 shadow-md">
-        <CardContent className="space-y-6 pt-6">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
-            <div>
-              <p className="font-bold text-slate-800 text-lg">{reservation.product?.name}</p>
-              <p className="text-sm text-slate-500 mt-1">
-                Qty: {reservation.quantity} × ${reservation.product?.price.toFixed(2)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                Shipping from: {reservation.warehouse?.name}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-500 mb-1">Total</p>
-              <p className="font-black text-2xl text-blue-600">${totalPrice}</p>
+        {/* Main Content Box */}
+        <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
+          
+          {/* Order Summary */}
+          <div className="p-8 md:p-10 border-b border-[#f5f5f7]">
+            <h2 className="text-lg font-semibold mb-6">Order Summary</h2>
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-semibold text-xl tracking-tight">{reservation.product?.name}</p>
+                <p className="text-[#86868b] mt-1">Quantity: {reservation.quantity}</p>
+                <p className="text-[#86868b] text-sm mt-1">Shipping from {reservation.warehouse?.name}</p>
+              </div>
+              <p className="font-semibold text-xl">${reservation.product?.price.toFixed(2)}</p>
             </div>
           </div>
 
-          {isPending && !isExpired ? (
-            <div className="flex items-center justify-between bg-amber-50 p-4 rounded-xl border border-amber-200 text-amber-800">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 animate-pulse text-amber-600" />
+          {/* Total Row */}
+          <div className="p-8 md:p-10 bg-[#fbfbfd]">
+            <div className="flex justify-between items-center mb-8">
+              <p className="text-2xl font-semibold">Total</p>
+              <p className="text-4xl font-bold tracking-tight">${totalPrice}</p>
+            </div>
+
+            {/* Timer / Status Banner */}
+            {isPending && !isExpired ? (
+              <div className="flex items-center justify-between bg-[#fff8e6] text-[#8a6300] p-4 rounded-[16px] mb-8">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 animate-pulse" />
+                  <div>
+                    <p className="font-semibold text-sm">Items reserved</p>
+                    <p className="text-xs opacity-80">Complete checkout soon</p>
+                  </div>
+                </div>
+                <p className="font-mono font-medium text-lg tracking-tight">
+                  {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+                </p>
+              </div>
+            ) : isPending && isExpired ? (
+              <div className="flex items-center gap-3 bg-[#fff0f0] text-[#cc0000] p-4 rounded-[16px] mb-8">
+                <AlertCircle className="w-5 h-5" />
                 <div>
-                  <p className="font-semibold text-sm">Items are reserved</p>
-                  <p className="text-xs opacity-80">Complete payment before timer ends</p>
+                  <p className="font-semibold text-sm">Reservation Expired</p>
+                  <p className="text-xs opacity-80">Please return to the store.</p>
                 </div>
               </div>
-              <p className="font-mono font-bold text-xl bg-white px-3 py-1 rounded-lg border border-amber-100 shadow-sm">
-                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
-              </p>
-            </div>
-          ) : isPending && isExpired ? (
-            <div className="flex items-center gap-3 text-red-700 bg-red-50 p-4 rounded-xl border border-red-200">
-              <AlertCircle className="w-6 h-6" />
-              <div>
-                <p className="font-bold">Reservation Expired</p>
-                <p className="text-sm opacity-90">Please return to store to try again.</p>
+            ) : (
+              <div className="flex items-center gap-3 bg-[#e8f6ea] text-[#00801c] p-4 rounded-[16px] mb-8">
+                <CheckCircle className="w-5 h-5" />
+                <div>
+                  <p className="font-semibold text-sm">Order {reservation.status.toLowerCase()}</p>
+                </div>
               </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col gap-4">
+              <button 
+                className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white font-semibold text-lg py-4 rounded-[14px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleAction("confirm")}
+                disabled={!isPending || isExpired || loading}
+              >
+                {loading ? "Processing..." : "Pay with Apple Pay"}
+              </button>
+              
+              <button 
+                className="w-full bg-transparent text-[#0071e3] font-medium py-3 rounded-[14px] hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                onClick={() => handleAction("release")}
+                disabled={!isPending || loading}
+              >
+                Cancel Order
+              </button>
             </div>
-          ) : (
-            <div className="flex items-center gap-3 text-green-700 bg-green-50 p-4 rounded-xl border border-green-200">
-              <CircleCheck className="w-6 h-6" />
-              <div>
-                <p className="font-bold">Order {reservation.status.toLowerCase()}</p>
-                <p className="text-sm opacity-90">Redirecting to store...</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex gap-3 pb-6 px-6">
-          <Button 
-            variant="outline" 
-            className="w-1/3 border-slate-300 text-slate-700 hover:bg-slate-50" 
-            onClick={() => handleAction("release")}
-            disabled={!isPending || loading}
-          >
-            Cancel
-          </Button>
-          <Button 
-            className="w-2/3 bg-blue-600 hover:bg-blue-700 shadow-md font-semibold text-white flex gap-2" 
-            onClick={() => handleAction("confirm")}
-            disabled={!isPending || isExpired || loading}
-          >
-            <CreditCard className="w-4 h-4" />
-            {loading ? "Processing..." : `Pay $${totalPrice}`}
-          </Button>
-        </CardFooter>
-      </Card>
+
+          </div>
+        </div>
+        
+        {/* Footer info */}
+        <p className="text-center text-[#86868b] text-xs mt-8 px-4">
+          Need help? Chat with a Specialist or call 1-800-MY-ALLO.<br/>
+          Free delivery and free returns.
+        </p>
+      </div>
     </div>
   );
 }
