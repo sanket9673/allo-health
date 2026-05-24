@@ -1,0 +1,70 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  url      = env("DIRECT_URL")
+  provider = "postgresql"
+  
+  
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  name         String
+  sku          String        @unique
+  price        Float
+  stocks       Stock[]
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Warehouse {
+  id           String        @id @default(uuid())
+  name         String
+  location     String
+  stocks       Stock[]
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Stock {
+  id               String    @id @default(uuid())
+  productId        String
+  warehouseId      String
+  totalQuantity    Int       @default(0) // Physical items on shelves
+  reservedQuantity Int       @default(0) // Items currently in a pending reservation
+  
+  product          Product   @relation(fields: [productId], references: [id])
+  warehouse        Warehouse @relation(fields: [warehouseId], references: [id])
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([productId, warehouseId]) // A warehouse can only have one stock record per product
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  RELEASED
+}
+
+model Reservation {
+  id          String            @id @default(uuid())
+  productId   String
+  warehouseId String
+  quantity    Int
+  status      ReservationStatus @default(PENDING)
+  expiresAt   DateTime
+  
+  product     Product           @relation(fields: [productId], references: [id])
+  warehouse   Warehouse         @relation(fields: [warehouseId], references: [id])
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
