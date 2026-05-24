@@ -59,7 +59,11 @@ export default function CheckoutPage() {
   const handleAction = async (action: "confirm" | "release") => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/reservations/${id}/${action}`, { method: "POST" });
+      const headers: Record<string, string> = {};
+      if (action === "confirm") {
+        headers["Idempotency-Key"] = crypto.randomUUID();
+      }
+      const res = await fetch(`/api/reservations/${id}/${action}`, { method: "POST", headers });
       const data = await res.json();
 
       if (res.status === 410) {

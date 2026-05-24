@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { redis } from '@/lib/redis';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+
+    // --- IDEMPOTENCY CHECK ---
+    const idempotencyKey = request.headers.get('idempotency-key');
+    if (redis && idempotencyKey) {
+      const cachedResponse = await redis.get(idempotencyKey);
+      if (cachedResponse) return NextResponse.json(cachedResponse, { status: 200 });
+    }
+
     const reservation = await prisma.reservation.findUnique({ where: { id } });
 
     if (!reservation) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -25,6 +34,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         },
       }),
     ]);
+
+    // --- SAVE TO REDIS ---
+    if (redis && idempotencyKey) {
+      await redis.set(idempotencyKey, result[0], { ex: 86400 });
+    }
 
     return NextResponse.json(result[0]);
   } catch (error) {

@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Allo Engineering – Inventory Reservation System
 
-## Getting Started
+This is a full-stack Next.js application built to solve the high-concurrency inventory reservation problem for D2C brands.
 
-First, run the development server:
+## 🚀 Live Demo
+**URL:** [INSERT YOUR VERCEL URL HERE]
 
+## 🧠 Core Problem Solved: Concurrency & Race Conditions
+The primary challenge of this exercise is ensuring that thousands of simultaneous users cannot overdraw inventory. 
+
+Instead of relying on application-level or distributed locks (which introduce latency and complexity), I utilized **Atomic Database Updates**.
+In `POST /api/reservations`, I execute a raw Postgres query:
+```sql
+UPDATE "Stock"
+SET "reservedQuantity" = "reservedQuantity" + ${quantity}
+WHERE "totalQuantity" - "reservedQuantity" >= ${quantity}
+```
+Because PostgreSQL evaluates the WHERE clause dynamically at the moment the row is locked for the update, this guarantees mathematically that stock can never be over-reserved, rendering the application completely race-condition-free.
+
+⏱️ Reservation Expiry Mechanism
+To prevent abandoned carts from permanently locking up inventory, reservations are valid for 10 minutes.
+Production Implementation: A Vercel Cron Job (vercel.json) is configured to run every 1 minute.
+It triggers a secure GET request to /api/cron/release-expired.
+The endpoint queries for all PENDING reservations where expiresAt < NOW().
+It utilizes a Prisma Transaction to safely mark them as RELEASED and decrement the reservedQuantity, returning the stock to the available pool.
+
+🔁 Bonus: Idempotency
+To prevent duplicate reservations and network retries from causing double charges or double reservations, Upstash Redis is implemented.
+The frontend generates a crypto.randomUUID() on Checkout/Reserve attempts and passes it via the Idempotency-Key header.
+The API checks Redis (SET key response NX EX 86400). If a previous response exists for that key, it short-circuits and returns the cached HTTP response, skipping the database mutation entirely.
+
+🛠️ How to run locally
+1. Clone and install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Environment Variables:
+Create a .env file in the root directory:
+```env
+DATABASE_URL="your_supabase_pooled_url"
+DIRECT_URL="your_supabase_direct_url"
+UPSTASH_REDIS_REST_URL="your_upstash_url"
+UPSTASH_REDIS_REST_TOKEN="your_upstash_token"
+CRON_SECRET="local-dev-secret"
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Database Setup & Seed:
+Run the following to push the schema and seed the database with Warehouses, Products, and Stock:
+```bash
+npx prisma db push
+npx prisma generate
+npx prisma db seed
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Start the server:
+```bash
+npm run dev
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+⚖️ Trade-offs & Future Improvements
+If I had more time, I would consider the following:
+Websockets / Server-Sent Events: Currently, stock levels on the frontend require a manual page reload to update (unless you click reserve). I would implement Supabase Realtime so the frontend stock numbers tick down live as other users reserve items.
+Cron Job Scale: Running a cron job every 1 minute works for this scale. However, at a massive scale, scanning the whole table for expired items could become slow. I would consider moving to an event-driven architecture (e.g., AWS EventBridge or a Redis TTL expiry event) to precisely trigger releases.
