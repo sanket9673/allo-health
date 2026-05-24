@@ -38,9 +38,14 @@ export default function Home() {
   const handleReserve = async (productId: string, warehouseId: string) => {
     setLoadingId(`${productId}-${warehouseId}`);
     try {
+      const idempotencyKey = crypto.randomUUID();
+
       const res = await fetch("/api/reservations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey
+        },
         body: JSON.stringify({ productId, warehouseId, quantity: 1 }),
       });
 

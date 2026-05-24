@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Clock, AlertCircle, CircleCheck } from "lucide-react";
 
 export default function CheckoutPage() {
   const { id } = useParams();
@@ -118,7 +118,7 @@ export default function CheckoutPage() {
             </div>
           ) : (
             <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg border border-green-200">
-              <CheckCircle2 className="w-5 h-5" />
+              <CircleCheck className="w-5 h-5" />
               <p className="font-semibold">Order {reservation.status.toLowerCase()}</p>
             </div>
           )}
